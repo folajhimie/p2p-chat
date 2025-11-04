@@ -32,21 +32,30 @@
                 <div v-if="contacts.length === 0" class="no-contacts">
                     No users found
                 </div>
+                <div class="contact">
+                    <div v-for="contact in contacts" :key="contact.id"
+                        :class="['contact-item', { active: currentChat?.id === contact.id }]"
+                        @click="selectContact(contact)">
+                        <div class="contact-avatar">
+                            {{ getInitials(contact.name) }}
+                        </div>
+                        <div class="contact-info">
+                            <div class="contact-name">{{ contact.name }}</div>
+                            <div class="contact-details">{{ contact.email }}</div>
+                        </div>
+                        <div v-if="contact.isOnline" class="online-status" title="Online"></div>
+                        <div v-else class="offline-status" title="Offline"></div>
+                    </div>
 
-                <div v-for="contact in contacts" :key="contact.id"
-                    :class="['contact-item', { active: currentChat?.id === contact.id }]"
-                    @click="selectContact(contact)">
-                    <div class="contact-avatar">
-                        {{ getInitials(contact.name) }}
-                    </div>
-                    <div class="contact-info">
-                        <div class="contact-name">{{ contact.name }}</div>
-                        <div class="contact-details">{{ contact.email }}</div>
-                    </div>
-                    <div v-if="contact.isOnline" class="online-status" title="Online"></div>
-                    <div v-else class="offline-status" title="Offline"></div>
                 </div>
+                <button @click="showUpdateModal = true" class="update-user">
+                    <div>🛞</div>
+                    <div>Settings</div>
+                </button>
+
+
             </div>
+
         </div>
 
         <!-- Chat Area -->
@@ -100,19 +109,27 @@
                 </div>
             </div>
         </div>
+
+        <UpdateUserModal :show-update-modal="showUpdateModal" :current-user="user" @close="showUpdateModal = false"
+            @profile-updated="handleProfileUpdated" />
     </div>
 </template>
 
 <script>
 import { mapState, mapMutations, mapActions } from 'vuex'
+import UpdateUserModal from './UpdateUserModal.vue';
 
 export default {
     name: 'ChatInterface',
+    components: {
+        UpdateUserModal
+    },
     data() {
         return {
             searchQuery: '',
             newMessage: '',
-            searchTimeout: null
+            searchTimeout: null,
+            showUpdateModal: false
         }
     },
     computed: {
@@ -152,7 +169,7 @@ export default {
         }
     },
     methods: {
-        ...mapMutations(['SET_CURRENT_CHAT', 'ADD_MESSAGE', 'UPDATE_USER_STATUS']),
+        ...mapMutations(['SET_CURRENT_CHAT', 'ADD_MESSAGE', 'UPDATE_USER_STATUS', 'UPDATE_CONTACT_PROFILE']),
         ...mapActions(['searchUsers', 'sendMessage', 'logout']),
 
         setupSocketListeners() {
@@ -245,6 +262,20 @@ export default {
 
         selectContact(contact) {
             this.SET_CURRENT_CHAT(contact)
+            // this.userInfo = contact;
+            console.log('👥 Selected contact:', contact);
+        },
+        handleProfileUpdated() {
+            console.log('✅ Profile updated successfully')
+            // The modal will close automatically
+        },
+
+        handleUserProfileUpdate(updatedUser) {
+            // Update contact list if this user is in our contacts
+            this.UPDATE_CONTACT_PROFILE(updatedUser)
+
+            // Show notification
+            this.$toast.info(`${updatedUser.name} updated their profile`)
         },
 
         handleIncomingMessage(message) {
